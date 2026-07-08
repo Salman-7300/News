@@ -67,3 +67,19 @@ Ab jetzt läuft es automatisch jeden Morgen. ✅
 - GitHub pausiert Cron-Workflows in Repos **ohne Aktivität nach ~60 Tagen** –
   da der Workflow täglich selbst committet, passiert das hier nicht.
 - Digest-Archiv liegt als Markdown in `digests/` – durchsuchbar, versioniert, deins.
+
+---
+
+## Neu in v2
+
+- **Dubletten-Clustering:** Dieselbe Story aus heise + Golem + HN wird zu einem
+  Eintrag mit allen Quellen-Links gemergt (Titel-Ähnlichkeit, Jaccard ≥ 0,45).
+  Mehrfach gemeldete Storys steigen im Ranking.
+- **Volltext-Anreicherung:** Für die Top-3-Einträge wird die Artikel-Seite
+  geladen (2500 Zeichen) – die Zusammenfassungen werden deutlich konkreter.
+- **Feedback-Buttons:** 👍/👎 unter jedem Telegram-Digest. Die Reaktionen werden
+  beim nächsten Lauf eingesammelt (`state/feedback.json`) und im Dashboard
+  angezeigt. **Wichtig:** Für den Bot darf kein Webhook gesetzt sein (Standard).
+- **Freitags-Wochenrückblick:** Jeden Freitag kommt zusätzlich ein Digest über
+  die letzten 7 Tage – „was war diese Woche wirklich wichtig".
+- **Fehler-Alarm:** Fehlgeschlagene Läufe melden sich per Telegram mit Log-Link.
