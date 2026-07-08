@@ -1,0 +1,92 @@
+# Kuratierte Quellen – weight steuert die Priorität im Ranking (1.0 = neutral).
+# Neue Quelle hinzufügen: einfach Block ergänzen, kein Code-Change nötig.
+
+feeds:
+  # ── KI / LLM ──────────────────────────────────────────────
+  - name: "Hacker News (Top)"
+    url: "https://hnrss.org/frontpage?points=80"
+    category: "Dev & HN"
+    weight: 1.2
+  - name: "Simon Willison"
+    url: "https://simonwillison.net/atom/everything/"
+    category: "KI & LLM"
+    weight: 1.4
+  - name: "Hugging Face Blog"
+    url: "https://huggingface.co/blog/feed.xml"
+    category: "KI & LLM"
+    weight: 1.1
+  - name: "r/LocalLLaMA"
+    url: "https://www.reddit.com/r/LocalLLaMA/top/.rss?t=day"
+    category: "KI & LLM"
+    weight: 1.3
+
+  # ── Deutsche IT-News ──────────────────────────────────────
+  - name: "heise online"
+    url: "https://www.heise.de/rss/heise-atom.xml"
+    category: "IT-News (DE)"
+    weight: 1.0
+  - name: "Golem"
+    url: "https://rss.golem.de/rss.php?feed=RSS2.0"
+    category: "IT-News (DE)"
+    weight: 1.0
+
+  # ── Dev / Selfhosting ─────────────────────────────────────
+  - name: "GitHub Trending (täglich)"
+    url: "https://mshibanami.github.io/GitHubTrendingRSS/daily/all.xml"
+    category: "Dev & HN"
+    weight: 1.1
+  - name: "Lobsters"
+    url: "https://lobste.rs/rss"
+    category: "Dev & HN"
+    weight: 1.0
+  - name: "r/selfhosted"
+    url: "https://www.reddit.com/r/selfhosted/top/.rss?t=day"
+    category: "Selfhosting"
+    weight: 1.2
+
+  # ── Gamedev ───────────────────────────────────────────────
+  - name: "Godot Engine"
+    url: "https://godotengine.org/rss.xml"
+    category: "Gamedev"
+    weight: 1.2
+  - name: "r/gamedev"
+    url: "https://www.reddit.com/r/gamedev/top/.rss?t=day"
+    category: "Gamedev"
+    weight: 1.0
+
+  # ── Security ──────────────────────────────────────────────
+  - name: "BleepingComputer"
+    url: "https://www.bleepingcomputer.com/feed/"
+    category: "Security"
+    weight: 1.0
+
+# Keywords geben Bonuspunkte im Ranking (case-insensitive Teilstring-Match).
+interests:
+  - ollama
+  - llama
+  - claude
+  - anthropic
+  - fastapi
+  - python
+  - docker
+  - self-hosted
+  - selfhosted
+  - homelab
+  - n8n
+  - automation
+  - automatisierung
+  - godot
+  - game dev
+  - windows
+  - powershell
+  - servicenow
+  - postgres
+  - react
+  - typescript
+  - esp32
+  - raspberry
+  - vps
+  - nginx
+  - security
+  - ransomware
+  - open source
