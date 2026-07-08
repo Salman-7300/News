@@ -1,0 +1,45 @@
+name: Täglicher KI-Digest
+
+on:
+  schedule:
+    # Cron läuft in UTC: 04:30 UTC = 06:30 deutsche Sommerzeit (Winter: 05:30 lokal).
+    # Für konstant 06:30 im Winter auf '30 5 * * *' ändern.
+    - cron: "30 4 * * *"
+  workflow_dispatch: {}   # manueller Start über den Actions-Tab
+
+permissions:
+  contents: write   # damit der Workflow digests/ und docs/ committen darf
+
+concurrency:
+  group: digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Dependencies installieren
+        run: pip install -r requirements.txt
+
+      - name: Digest erzeugen
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python digest.py
+
+      - name: Ergebnis committen (Digest + Dashboard)
+        run: |
+          git config user.name "digest-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add digests/ docs/
+          git diff --cached --quiet || git commit -m "Digest $(date -u +%F)"
+          git push
