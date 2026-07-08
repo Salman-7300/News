@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>KI-Digest</title>
+<style>
+  :root{
+    --bg:#171310; --panel:#211b16; --border:#372c22;
+    --text:#ede4d8; --muted:#a08d78; --accent:#d29a5b; --accent-dim:#8a6236;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+       font:16px/1.6 "Instrument Sans",system-ui,-apple-system,sans-serif}
+  .wrap{max-width:820px;margin:0 auto;padding:32px 20px 80px}
+  header{display:flex;justify-content:space-between;align-items:baseline;
+         border-bottom:1px solid var(--border);padding-bottom:18px;margin-bottom:28px;
+         flex-wrap:wrap;gap:12px}
+  h1{font-size:1.5rem;margin:0;letter-spacing:.02em}
+  h1 span{color:var(--accent)}
+  .meta{color:var(--muted);font-size:.85rem}
+  details{margin-bottom:22px}
+  article{background:var(--panel);border:1px solid var(--border);
+          border-radius:10px;padding:22px 24px}
+  summary{cursor:pointer;font-weight:600;list-style:none;
+          display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  summary::-webkit-details-marker{display:none}
+  .badge{color:var(--muted);font-weight:400;font-size:.8rem}
+  article h2{font-size:.95rem;text-transform:uppercase;letter-spacing:.08em;
+             color:var(--accent);margin:22px 0 8px;border-bottom:1px solid var(--border);
+             padding-bottom:6px}
+  article li{margin:8px 0 8px 4px;list-style:none;padding-left:16px;position:relative}
+  article li::before{content:"›";position:absolute;left:0;color:var(--accent-dim)}
+  article a{color:var(--accent);text-decoration:none}
+  article a:hover{text-decoration:underline}
+  article p{margin:10px 0}
+  .empty{color:var(--muted);text-align:center;padding:60px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>KI-<span>Digest</span></h1>
+      <div class="meta">Serverlos via GitHub Actions · Stand: 08.07.2026 08:41</div>
+    </div>
+  </header>
+  <details open><article><summary>Wed, 08.07.2026 08:41<span class="badge">25 Quellen-Items · anthropic:claude-haiku-4-5-20251001</span></summary><div class="content"><p><strong>Top-Story:</strong> DFlash in llama.cpp erreicht 4,44x schnellere Inferenz auf Qwen 27B mit 36K Context – spekulatives Decoding mit Block-Diffusion-Drafter schlägt bisherige Benchmarks. <a href="https://www.reddit.com/r/LocalLLaMA/comments/1uq0h4o/i_tested_freshly_merged_dflash_in_llamacpp_on/" target="_blank" rel="noopener noreferrer">https://www.reddit.com/r/LocalLLaMA/comments/1uq0h4o/i_tested_freshly_merged_dflash_in_llamacpp_on/</a></p>
+<h2>KI &amp; LLM</h2>
+<li><strong>mistral.rs v0.9.0</strong> – bis zu 1,8x schnelleres CPU-Decoding als llama.cpp auf x86 und ARM. <a href="https://www.reddit.com/r/LocalLLaMA/comments/1upynpt/mistralrs_v090_up_to_18x_faster_cpu_decode_than/" target="_blank" rel="noopener noreferrer">https://www.reddit.com/r/LocalLLaMA/comments/1upynpt/mistralrs_v090_up_to_18x_faster_cpu_decode_than/</a></li>
+<li><strong>Jacobian Lens auf Open Models</strong> – Anthropics Global-Workspace-Forschung als lokaler Hallucination-Router umgesetzt. <a href="https://www.reddit.com/r/LocalLLaMA/comments/1upy31x/i_tested_anthropics_new_jacobian_lens_on_open/" target="_blank" rel="noopener noreferrer">https://www.reddit.com/r/LocalLLaMA/comments/1upy31x/i_tested_anthropics_new_jacobian_lens_on_open/</a></li>
+<li><strong>PromptChain für Multi-Model-Chaining</strong> – kleines lokales Modell schreibt Prompts um, größeres coded, mit automatischem VRAM-Unloading zwischen ihnen. <a href="https://www.reddit.com/r/LocalLLaMA/comments/1upwvxa/i_made_a_tool_that_chains_a_small_local_model/" target="_blank" rel="noopener noreferrer">https://www.reddit.com/r/LocalLLaMA/comments/1upwvxa/i_made_a_tool_that_chains_a_small_local_model/</a></li>
+<h2>Dev &amp; HN</h2>
+<li><strong>Meetily</strong> – Privacy-first AI-Meeting-Assistant mit 4x schnellerer Whisper/Parakeet-Transkription, vollständig lokal auf Rust. <a href="https://github.com/Zackriya-Solutions/meetily" target="_blank" rel="noopener noreferrer">https://github.com/Zackriya-Solutions/meetily</a></li>
+<li><strong>awesome-claude-code</strong> – kuratierte Ressourcensammlung für Claude Code Agents und Multi-Turn-Workflows. <a href="https://github.com/hesreallyhim/awesome-claude-code" target="_blank" rel="noopener noreferrer">https://github.com/hesreallyhim/awesome-claude-code</a></li>
+<li><strong>Rowboat</strong> – Open-Source, lokale Alternative zu Claude Desktop mit eigenen Work-Surface-Builder. <a href="https://github.com/rowboatlabs/rowboat" target="_blank" rel="noopener noreferrer">https://github.com/rowboatlabs/rowboat</a></li>
+<li><strong>Pocket TTS</strong> – leichte Text-to-Speech ohne GPU/Web-APIs, pip install und ready to go. <a href="https://github.com/kyutai-labs/pocket-tts" target="_blank" rel="noopener noreferrer">https://github.com/kyutai-labs/pocket-tts</a></li>
+<h2>Security</h2>
+<li><strong>Accenture Breach</strong> – Hacker bietet 35 GB Quellcode und weitere Daten zum Verkauf an. <a href="https://www.bleepingcomputer.com/news/security/accenture-confirms-breach-after-hacker-offers-stolen-data-for-sale/" target="_blank" rel="noopener noreferrer">https://www.bleepingcomputer.com/news/security/accenture-confirms-breach-after-hacker-offers-stolen-data-for-sale/</a></li>
+<li><strong>GitHub Actions Attack Pattern</strong> – CI-Security-Scanner verpassen neue Attack-Chains; Governance-Schwachstellen in Workflows aufgedeckt. <a href="https://www.bleepingcomputer.com/news/security/the-github-actions-attack-pattern-your-ci-security-scanners-miss/" target="_blank" rel="noopener noreferrer">https://www.bleepingcomputer.com/news/security/the-github-actions-attack-pattern-your-ci-security-scanners-miss/</a></li>
+<li><strong>Air-Gapped-Malware via Monitor-Kabel</strong> – Datenexfiltration über HDMI/DP umgeht physische Netzwerk-Isolation. <a href="https://www.golem.de/news/air-gapped-systeme-malware-leitet-daten-ueber-monitorkabel-aus-2607-210592.html" target="_blank" rel="noopener noreferrer">https://www.golem.de/news/air-gapped-systeme-malware-leitet-daten-ueber-monitorkabel-aus-2607-210592.html</a></li></div></article></details>
+</div>
+</body>
+</html>
