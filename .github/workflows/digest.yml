@@ -2,9 +2,10 @@ name: Täglicher KI-Digest
 
 on:
   schedule:
-    # Cron läuft in UTC: 04:30 UTC = 06:30 deutsche Sommerzeit (Winter: 05:30 lokal).
-    # Für konstant 06:30 im Winter auf '30 5 * * *' ändern.
-    - cron: "30 4 * * *"
+    # 4:33 UTC = 6:33 Sommerzeit / 5:33 Winterzeit. Ungerade Minute = weniger
+    # GitHub-Cron-Last, dadurch zuverlässiger als glatte Zeiten wie 4:30.
+    # Für konstant 6:33 auch im Winter: auf "33 5 * * *" ändern.
+    - cron: "33 4 * * *"
   workflow_dispatch: {}   # manueller Start über den Actions-Tab
 
 permissions:
@@ -40,6 +41,13 @@ jobs:
         run: |
           git config user.name "digest-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add digests/ docs/
+          git add digests/ docs/ state/
           git diff --cached --quiet || git commit -m "Digest $(date -u +%F)"
           git push
+
+      - name: Fehler-Alarm per Telegram
+        if: failure()
+        run: |
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d text="⚠️ KI-Digest-Lauf fehlgeschlagen: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
