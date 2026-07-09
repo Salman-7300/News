@@ -83,3 +83,18 @@ Ab jetzt läuft es automatisch jeden Morgen. ✅
 - **Freitags-Wochenrückblick:** Jeden Freitag kommt zusätzlich ein Digest über
   die letzten 7 Tage – „was war diese Woche wirklich wichtig".
 - **Fehler-Alarm:** Fehlgeschlagene Läufe melden sich per Telegram mit Log-Link.
+
+---
+
+## Neu in v3
+
+- **Selbstlernende Interessen:** 👎 senkt die Gewichte der Kategorien des
+  bewerteten Digests (anteilig), 👍 hebt sie leicht – nach ~2 Wochen ist der
+  Digest auf deinen Geschmack kalibriert (`state/feedback.json → cat_weights`).
+- **Archiv-Suche im Dashboard:** Suchfeld filtert alle Digests live nach
+  Stichwort (z.B. „ollama", „cve") und öffnet die Treffer.
+
+**Hinweis:** Digest und Deal-Sniper nutzen beide `getUpdates`. Wenn du für beide
+denselben Bot verwendest, „klauen" sie sich gegenseitig die Updates. Lösung:
+zwei getrennte Bots (je einer bei @BotFather), oder nur bei einem die
+Chat-Interaktion (Feedback/Commands) aktiv lassen.

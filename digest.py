@@ -106,6 +106,8 @@ def entry_published(entry) -> datetime | None:
 def fetch_items() -> list[dict]:
     cfg = yaml.safe_load((BASE / "feeds.yaml").read_text(encoding="utf-8"))
     interests = [kw.lower() for kw in cfg.get("interests", [])]
+    # Selbstlernende Kategorie-Gewichte aus 👍/👎-Feedback
+    cat_weights = load_json(STATE_DIR / "feedback.json", {}).get("cat_weights", {})
     cutoff = datetime.now(timezone.utc) - timedelta(hours=LOOKBACK_HOURS)
     seen: set[str] = set()
     items: list[dict] = []
@@ -134,11 +136,13 @@ def fetch_items() -> list[dict]:
                 summary = clean(getattr(entry, "summary", ""))[:600]
                 haystack = f"{title} {summary}".lower()
                 hits = sum(1 for kw in interests if kw in haystack)
+                category = feed.get("category", "Sonstiges")
                 seen.add(guid)
                 items.append({
                     "title": title, "link": link, "summary": summary,
-                    "source": feed["name"], "category": feed.get("category", "Sonstiges"),
-                    "score": round(float(feed.get("weight", 1.0)) + hits * 0.5, 2),
+                    "source": feed["name"], "category": category,
+                    "score": round(float(feed.get("weight", 1.0)) + hits * 0.5
+                                   + float(cat_weights.get(category, 0.0)), 2),
                     "published": published.isoformat(),
                     "alt_sources": [],  # wird beim Clustering gefüllt
                     "fulltext": "",
@@ -264,9 +268,12 @@ def save_digest(md: str, item_count: int, llm: str, suffix: str = "") -> Path:
 
 # ── 6. Feedback einsammeln (👍/👎 vom Vortag) ──────────────────────────────
 def collect_feedback(token: str) -> None:
-    """Holt Callback-Queries per getUpdates. Funktioniert nur, wenn für den
-    Bot kein Webhook registriert ist."""
-    fb = load_json(STATE_DIR / "feedback.json", {"up": 0, "down": 0, "offset": 0})
+    """Holt Callback-Queries per getUpdates und lernt daraus: 👎 senkt die
+    Gewichte der Kategorien des bewerteten Digests, 👍 hebt sie leicht an.
+    Funktioniert nur, wenn für den Bot kein Webhook registriert ist."""
+    fb = load_json(STATE_DIR / "feedback.json",
+                   {"up": 0, "down": 0, "offset": 0, "cat_weights": {}})
+    last_cats = load_json(STATE_DIR / "last_categories.json", {})
     try:
         resp = httpx.get(f"https://api.telegram.org/bot{token}/getUpdates",
                          params={"offset": fb.get("offset", 0) + 1,
@@ -279,19 +286,39 @@ def collect_feedback(token: str) -> None:
         print(f"WARN: Feedback-Abruf fehlgeschlagen: {exc}", file=sys.stderr)
         return
 
+    weights = fb.setdefault("cat_weights", {})
     for upd in updates:
         fb["offset"] = max(fb.get("offset", 0), upd["update_id"])
         cq = upd.get("callback_query")
         if not cq:
             continue
         data = cq.get("data", "")
-        if data == "fb:up":
-            fb["up"] = fb.get("up", 0) + 1
-        elif data == "fb:down":
-            fb["down"] = fb.get("down", 0) + 1
+        if data not in ("fb:up", "fb:down"):
+            continue
+        direction = 1 if data == "fb:up" else -1
+        fb["up" if direction > 0 else "down"] = fb.get("up" if direction > 0 else "down", 0) + 1
+        # Lernen: Anteil der Kategorie am bewerteten Digest bestimmt die Schrittweite
+        step = 0.06 if direction < 0 else 0.03  # 👎 wiegt schwerer als 👍
+        for cat, share in last_cats.items():
+            new = weights.get(cat, 0.0) + direction * step * float(share)
+            weights[cat] = round(max(-0.6, min(0.6, new)), 3)
     save_json(STATE_DIR / "feedback.json", fb)
     if updates:
-        print(f"Feedback eingesammelt: 👍{fb['up']} / 👎{fb['down']} gesamt")
+        print(f"Feedback eingesammelt: 👍{fb['up']} / 👎{fb['down']} · "
+              f"Gewichte: {weights}")
+
+
+def save_category_snapshot(items: list[dict]) -> None:
+    """Merkt sich die Kategorien-Verteilung des heutigen Digests, damit das
+    nächste Feedback weiß, worauf es sich bezieht."""
+    if not items:
+        return
+    counts: dict[str, int] = {}
+    for it in items:
+        counts[it["category"]] = counts.get(it["category"], 0) + 1
+    total = sum(counts.values())
+    save_json(STATE_DIR / "last_categories.json",
+              {cat: round(n / total, 3) for cat, n in counts.items()})
 
 
 # ── 7. Telegram-Push (mit Feedback-Buttons) ────────────────────────────────
@@ -441,6 +468,7 @@ def main() -> int:
 
     md, llm = summarize(items)
     save_digest(md, len(items), llm)
+    save_category_snapshot(items)
     send_telegram(md, f"☕ Dein Tech-Digest – {datetime.now(TZ).strftime('%A, %d.%m.%Y')}")
 
     if datetime.now(TZ).weekday() == 4:  # Freitag

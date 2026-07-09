@@ -46,7 +46,31 @@
       <div class="meta">Serverlos via GitHub Actions · Stand: <!--UPDATED--></div>
     </div>
   </header>
+
+  <input id="q" type="search" placeholder="🔎 Archiv durchsuchen (z.B. ollama, godot, cve)…"
+         style="width:100%;background:var(--panel);border:1px solid var(--border);
+                color:var(--text);border-radius:10px;padding:11px 14px;font:inherit;
+                margin-bottom:22px">
+  <div id="noResult" style="display:none;color:var(--muted);text-align:center;padding:30px 0">
+    Keine Treffer im Archiv.</div>
+
   <!--DIGESTS-->
 </div>
+
+<script>
+  const q = document.getElementById("q");
+  const cards = [...document.querySelectorAll("details")];
+  q.addEventListener("input", () => {
+    const term = q.value.trim().toLowerCase();
+    let visible = 0;
+    cards.forEach(c => {
+      const hit = !term || c.textContent.toLowerCase().includes(term);
+      c.style.display = hit ? "" : "none";
+      if (hit) { visible++; if (term) c.open = true; }
+    });
+    document.getElementById("noResult").style.display =
+      (visible === 0 && term) ? "block" : "none";
+  });
+</script>
 </body>
 </html>
