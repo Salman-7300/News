@@ -5,7 +5,7 @@ on:
     # 4:33 UTC = 6:33 Sommerzeit / 5:33 Winterzeit. Ungerade Minute = weniger
     # GitHub-Cron-Last, dadurch zuverlässiger als glatte Zeiten wie 4:30.
     # Für konstant 6:33 auch im Winter: auf "33 5 * * *" ändern.
-    - cron: "33 6 * * *"
+    - cron: "33 4 * * *"
   workflow_dispatch: {}   # manueller Start über den Actions-Tab
 
 permissions:
