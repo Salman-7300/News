@@ -14,6 +14,7 @@ Neu in v2:
 
 Secrets: ANTHROPIC_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 """
+import argparse
 import hashlib
 import html
 import json
@@ -103,12 +104,12 @@ def entry_published(entry) -> datetime | None:
     return None
 
 
-def fetch_items() -> list[dict]:
+def fetch_items(lookback_hours: int | None = None) -> list[dict]:
     cfg = yaml.safe_load((BASE / "feeds.yaml").read_text(encoding="utf-8"))
     interests = [kw.lower() for kw in cfg.get("interests", [])]
     # Selbstlernende Kategorie-Gewichte aus 👍/👎-Feedback
     cat_weights = load_json(STATE_DIR / "feedback.json", {}).get("cat_weights", {})
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=LOOKBACK_HOURS)
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=lookback_hours or LOOKBACK_HOURS)
     seen: set[str] = set()
     items: list[dict] = []
 
@@ -351,8 +352,7 @@ def send_telegram(md: str, header: str, with_feedback: bool = True) -> None:
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
     if not token or not chat_id:
-        print("Telegram nicht konfiguriert – Push übersprungen")
-        return
+        raise RuntimeError("Telegram nicht konfiguriert: TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID fehlen")
 
     body = f"<b>{html.escape(header)}</b>\n\n{md_to_tg_html(md)}"
     chunks, current = [], ""
@@ -375,9 +375,7 @@ def send_telegram(md: str, header: str, with_feedback: bool = True) -> None:
             ]]}
         resp = httpx.post(url, json=payload, timeout=30)
         if resp.status_code != 200:
-            print(f"WARN: Telegram-Fehler {resp.status_code}: {resp.text[:300]}",
-                  file=sys.stderr)
-            return
+            raise RuntimeError(f"Telegram-Fehler {resp.status_code}: {resp.text[:500]}")
     print("Digest per Telegram versendet")
 
 
@@ -451,6 +449,48 @@ def render_dashboard() -> None:
     print(f"Dashboard gerendert ({len(articles)} Digests)")
 
 
+# ── Sofort-Alerts für kritische Keywords ───────────────────────────────────
+def run_alerts_only() -> int:
+    cfg = yaml.safe_load((BASE / "feeds.yaml").read_text(encoding="utf-8"))
+    keywords = [str(k).strip().lower() for k in cfg.get("alert_keywords", []) if str(k).strip()]
+    if not keywords:
+        print("Keine alert_keywords konfiguriert – nichts zu tun")
+        return 0
+
+    lookback = int(os.environ.get("ALERT_LOOKBACK_HOURS", "3"))
+    items = fetch_items(lookback_hours=lookback)
+    matches = []
+    for item in items:
+        haystack = f"{item['title']} {item.get('summary', '')}".lower()
+        found = [kw for kw in keywords if kw in haystack]
+        if found:
+            matches.append((item, found))
+
+    seen = load_json(STATE_DIR / "alerts_seen.json", {})
+    cutoff = (datetime.now(TZ) - timedelta(days=14)).isoformat()
+    seen = {key: ts for key, ts in seen.items() if ts >= cutoff}
+    fresh = []
+    for item, found in matches:
+        key = hashlib.sha256(item["link"].encode()).hexdigest()
+        if key in seen:
+            continue
+        fresh.append((item, found))
+        seen[key] = datetime.now(TZ).isoformat()
+
+    save_json(STATE_DIR / "alerts_seen.json", seen)
+    if not fresh:
+        print(f"Keine neuen Sofort-Alerts ({len(matches)} Treffer bereits bekannt)")
+        return 0
+
+    lines = []
+    for item, found in fresh[:12]:
+        tags = ", ".join(found[:4])
+        lines.append(f"- **{item['title']}** – Treffer: {tags}. [Link]({item['link']})")
+    send_telegram("\n".join(lines), f"🚨 Tech-Sofort-Alert · {len(fresh)} neue Treffer", with_feedback=False)
+    print(f"{len(fresh)} Sofort-Alerts versendet")
+    return 0
+
+
 # ── Main ───────────────────────────────────────────────────────────────────
 def main() -> int:
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
@@ -459,7 +499,10 @@ def main() -> int:
 
     items = fetch_items()
     if not items:
-        print("Keine Einträge im Zeitfenster – Abbruch ohne Digest")
+        print("Keine Einträge im Zeitfenster – sende Statusmeldung")
+        send_telegram("Heute gab es im eingestellten Zeitfenster keine neuen passenden Beiträge.",
+                      f"☕ Dein Tech-Digest – {datetime.now(TZ).strftime('%A, %d.%m.%Y')}",
+                      with_feedback=False)
         render_dashboard()
         return 0
 
@@ -479,4 +522,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    parser = argparse.ArgumentParser(description="KI-Digest und Keyword-Sofort-Alerts")
+    parser.add_argument("--alerts-only", action="store_true", help="Nur kritische Keyword-Alerts prüfen")
+    args = parser.parse_args()
+    sys.exit(run_alerts_only() if args.alerts_only else main())

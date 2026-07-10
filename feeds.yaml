@@ -90,3 +90,17 @@ interests:
   - security
   - ransomware
   - open source
+
+# Sofort-Alerts werden alle zwei Stunden separat geprüft. Nur wirklich dringende
+# Begriffe eintragen, sonst wird Telegram schnell laut.
+alert_keywords:
+  - cve
+  - zero-day
+  - 0-day
+  - actively exploited
+  - ransomware
+  - kritische schwachstelle
+  - remote code execution
+  - servicenow vulnerability
+  - microsoft outage
+  - azure outage

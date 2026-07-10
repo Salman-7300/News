@@ -55,8 +55,9 @@ Ab jetzt läuft es automatisch jeden Morgen. ✅
 
 - **Quellen & Keywords:** `feeds.yaml` direkt auf GitHub editieren – Feeds
   hinzufügen/entfernen, `interests` steuern das Ranking. Kein Code-Change nötig.
-- **Uhrzeit:** in `.github/workflows/digest.yml` – Achtung, Cron läuft in **UTC**
-  (04:30 UTC = 06:30 Sommerzeit; im Winter auf `30 5 * * *` stellen für 06:30).
+- **Uhrzeit:** in `.github/workflows/digest.yml`. Der Workflow nutzt
+  `timezone: "Europe/Berlin"` und läuft deshalb ganzjährig um **06:33 Uhr** –
+  ohne manuelle Sommer-/Winterzeit-Umstellung.
 - **Look:** `template.html` (Dashboard-Design).
 
 ## Hinweise
@@ -98,3 +99,33 @@ Ab jetzt läuft es automatisch jeden Morgen. ✅
 denselben Bot verwendest, „klauen" sie sich gegenseitig die Updates. Lösung:
 zwei getrennte Bots (je einer bei @BotFather), oder nur bei einem die
 Chat-Interaktion (Feedback/Commands) aktiv lassen.
+
+
+## Update v4: Sofort-Alerts und Telegram-Selbsttest
+
+- **Keyword-Sofort-Alerts:** `.github/workflows/alerts.yml` prüft alle zwei
+  Stunden die Feeds. Treffer auf `alert_keywords` aus `feeds.yaml` werden sofort
+  geschickt und 14 Tage dedupliziert (`state/alerts_seen.json`).
+- **Immer eine Morgenmeldung:** Gibt es keine neuen Beiträge, kommt jetzt eine
+  kurze Statusnachricht. Früher endete der Lauf in diesem Fall absichtlich ohne
+  Telegram-Push.
+- **Telegram-Preflight:** Token und Chat-ID werden vor dem Digest über `getMe`
+  und `getChat` validiert. Fehlende/falsche Secrets erzeugen einen klaren roten
+  Workflow statt eines stillen grünen Laufs.
+- **Lokale Zeitzone:** Der Zeitplan ist fest auf `Europe/Berlin`, jeden Tag
+  06:33 Uhr – inklusive automatischer Sommer-/Winterzeit.
+
+### GitHub-Secrets
+
+Unter **Settings → Secrets and variables → Actions** müssen für Telegram exakt
+existieren:
+
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_CHAT_ID`
+
+`ANTHROPIC_API_KEY` ist empfohlen, aber nicht zwingend: Ohne ihn nutzt der
+Digest weiterhin seine eingebaute einfache Linklisten-Zusammenfassung.
+
+Schicke dem Bot zuerst `/start`. Starte danach unter **Actions → Täglicher
+KI-Digest → Run workflow** einen manuellen Test. Der Schritt **Secrets und
+Telegram prüfen** sagt jetzt direkt, ob Token oder Chat-ID das Problem sind.
