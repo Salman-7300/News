@@ -1,0 +1,65 @@
+name: KI-Digest Sofort-Alerts
+
+on:
+  schedule:
+    - cron: "11 */2 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ki-digest-state
+  cancel-in-progress: false
+
+jobs:
+  alerts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Dependencies installieren
+        run: pip install -r requirements.txt
+
+      - name: Telegram-Konfiguration prüfen
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python - <<'PY'
+          import os, httpx
+          token=os.environ.get("TELEGRAM_BOT_TOKEN","").strip()
+          chat=os.environ.get("TELEGRAM_CHAT_ID","").strip()
+          if not token or not chat:
+              raise SystemExit("FEHLER: TELEGRAM_BOT_TOKEN oder TELEGRAM_CHAT_ID fehlt in GitHub Actions Secrets.")
+          for method,params in (("getMe",None),("getChat",{"chat_id":chat})):
+              r=httpx.get(f"https://api.telegram.org/bot{token}/{method}",params=params,timeout=20)
+              data=r.json()
+              if not r.is_success or not data.get("ok"):
+                  raise SystemExit(f"FEHLER: Telegram {method} fehlgeschlagen: {data}")
+          print("Telegram-Konfiguration ist gültig.")
+          PY
+
+      - name: Kritische Keywords prüfen
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ALERT_LOOKBACK_HOURS: "3"
+        run: python digest.py --alerts-only
+
+      - name: Alert-State committen
+        run: |
+          git config user.name "digest-alert-bot"
+          git config user.email "actions@users.noreply.github.com"
+          [ -d state ] && git add state || true
+          git diff --cached --quiet || git commit -m "Alert-Check $(date -u '+%F %H:%M')"
+          git pull --rebase
+          git push
