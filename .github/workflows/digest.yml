@@ -2,17 +2,16 @@ name: Täglicher KI-Digest
 
 on:
   schedule:
-    # 4:33 UTC = 6:33 Sommerzeit / 5:33 Winterzeit. Ungerade Minute = weniger
-    # GitHub-Cron-Last, dadurch zuverlässiger als glatte Zeiten wie 4:30.
-    # Für konstant 6:33 auch im Winter: auf "33 5 * * *" ändern.
-    - cron: "33 4 * * *"
-  workflow_dispatch: {}   # manueller Start über den Actions-Tab
+    # Ganzjährig 06:33 Uhr deutscher Ortszeit (inklusive Sommer-/Winterzeit).
+    - cron: "33 6 * * *"
+      timezone: "Europe/Berlin"
+  workflow_dispatch: {}
 
 permissions:
-  contents: write   # damit der Workflow digests/ und docs/ committen darf
+  contents: write
 
 concurrency:
-  group: digest
+  group: ki-digest-state
   cancel-in-progress: false
 
 jobs:
@@ -21,6 +20,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -30,6 +31,28 @@ jobs:
       - name: Dependencies installieren
         run: pip install -r requirements.txt
 
+      - name: Secrets und Telegram prüfen
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python - <<'PY'
+          import os, httpx
+          missing=[name for name in ("TELEGRAM_BOT_TOKEN","TELEGRAM_CHAT_ID") if not os.environ.get(name,"").strip()]
+          if missing:
+              raise SystemExit("FEHLER: Folgende GitHub Actions Secrets fehlen: "+", ".join(missing))
+          if not os.environ.get("ANTHROPIC_API_KEY", "").strip():
+              print("HINWEIS: ANTHROPIC_API_KEY fehlt – der Digest nutzt die eingebaute Linklisten-Fallback-Zusammenfassung.")
+          token=os.environ["TELEGRAM_BOT_TOKEN"].strip(); chat=os.environ["TELEGRAM_CHAT_ID"].strip()
+          for method,params in (("getMe",None),("getChat",{"chat_id":chat})):
+              r=httpx.get(f"https://api.telegram.org/bot{token}/{method}",params=params,timeout=20)
+              data=r.json()
+              if not r.is_success or not data.get("ok"):
+                  raise SystemExit(f"FEHLER: Telegram {method} fehlgeschlagen: {data}")
+          print("Secrets vorhanden und Telegram erreichbar.")
+          PY
+
       - name: Digest erzeugen
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -37,17 +60,27 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python digest.py
 
-      - name: Ergebnis committen (Digest + Dashboard)
+      - name: Ergebnis committen
         run: |
           git config user.name "digest-bot"
           git config user.email "actions@users.noreply.github.com"
-          git add digests/ docs/ state/
+          [ -d digests ] && git add digests || true
+          [ -d docs ] && git add docs || true
+          [ -d state ] && git add state || true
           git diff --cached --quiet || git commit -m "Digest $(date -u +%F)"
+          git pull --rebase
           git push
 
       - name: Fehler-Alarm per Telegram
         if: failure()
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-            -d text="⚠️ KI-Digest-Lauf fehlgeschlagen: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
+            curl --fail-with-body -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              -d chat_id="${TELEGRAM_CHAT_ID}" \
+              -d text="⚠️ KI-Digest-Lauf fehlgeschlagen: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          else
+            echo "Fehler-Alarm übersprungen: Telegram-Secrets fehlen."
+          fi
