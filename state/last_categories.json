@@ -1,7 +1,6 @@
 {
- "KI & LLM": 0.2,
- "Dev & HN": 0.44,
+ "KI & LLM": 0.24,
+ "Dev & HN": 0.48,
  "Security": 0.12,
- "IT-News (DE)": 0.2,
- "Gamedev": 0.04
+ "IT-News (DE)": 0.16
 }
